@@ -253,3 +253,58 @@ class NumentaPreprocessor(AbstractPreprocessor):
         output[indices] = 1
 
         return output
+
+
+class AltGeoPreprocessor(AbstractPreprocessor):
+    def __init__(self, g_prec: int = 6, s_prec: int = 1, s_max: float = 140):
+        self.g_prec = g_prec
+        self.s_prec = s_prec
+        self.s_max = s_max
+
+    def _process(self, filename: str, cache: dict) -> None:
+        # language=rst
+        """
+        Experimental Encoding
+
+        The csv file is expected to have three columns with headers: `speed,latitude,longitude`
+        :param filename: csv file containing raw data
+        :param cache: dict containing 'data'
+        """
+        data = pd.read_csv(filename)
+        speeds = data['speed'].tolist()
+        latitudes = data['latitude'].tolist()
+        longitudes = data['longitude'].tolist()
+
+        gconst = 10 ** self.g_prec
+        sconst = 10 ** self.s_prec
+
+        gdigits = len(str(int(360 * gconst)))
+        sdigits = len(str(int(self.s_max * sconst)))
+
+        values = []
+        for speed, latitude, longitude in tqdm(zip(speeds, latitudes, longitudes), unit='Entry'):
+
+            latitude = str(int(np.floor((latitude + 90) * gconst)))
+            longitude = str(int(np.floor((longitude + 180) * gconst)))
+            speed = str(int(np.floor(speed * sconst)))
+
+            lat = np.zeros((gdigits, 10))
+            long = np.zeros((gdigits, 10))
+            spd = np.zeros((sdigits, 10))
+
+            self.__encode(latitude, lat)
+            self.__encode(longitude, long)
+            self.__encode(speed, spd)
+
+            v = np.concatenate((np.reshape(lat, -1), np.reshape(long, -1), np.reshape(spd, -1)))
+
+            values.append(v.tolist())
+
+        cache['data'] = torch.tensor(values)
+
+    @staticmethod
+    def __encode(num_str, mat):
+        j = 0
+        for i in num_str:
+            mat[j][int(i)] = 1
+            j += 1

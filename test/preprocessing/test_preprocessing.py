@@ -1,7 +1,7 @@
 import os
 import torch
 
-from bindsnet.preprocessing import NumentaPreprocessor
+from bindsnet.preprocessing import NumentaPreprocessor, AltGeoPreprocessor
 
 
 class TestPreprocessing:
@@ -37,3 +37,16 @@ class TestPreprocessing:
             assert sum(sum(val)) == 35 * 30
 
         test1(), test2(), test3(), test4()
+
+    def test_alt_preprocessor(self):
+        csvfile = './test/preprocessing/test.csv'
+        processedfile = './test/preprocessing/data.p'
+
+        def test1():
+            enc = AltGeoPreprocessor()
+            val = enc.process(csvfile, use_cache=True, cachedfile=processedfile)
+            assert os.path.exists(processedfile)
+            os.remove(processedfile)
+            assert val is not None
+
+        test1()
