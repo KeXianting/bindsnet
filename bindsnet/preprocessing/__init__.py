@@ -112,7 +112,7 @@ class AbstractPreprocessor(ABC):
 
 
 class NumentaPreprocessor(AbstractPreprocessor):
-    def __init__(self, scale=5, w=21, n=1000, timestep=10) -> None:
+    def __init__(self, scale: int = 5, w: int = 21, n: int = 1000, timestep: int = 10) -> None:
         # language=rst
         """
         Numenta Encoder for geospatial data as decribed here: http://chetansurpur.com/slides/2014/8/5/geospatial-encoder.html
@@ -188,10 +188,10 @@ class NumentaPreprocessor(AbstractPreprocessor):
     def __map_transform(self, latitude: float, longitude: float) -> Tuple[int, int]:
         # language=rst
         """
-        Returns the bit in the output vector for given coordinate
+        transforms the input coordinates to spherical mercator coordinates
         :param latitude: latitude value
         :param longitude: longitude value
-        :return: transforms the input coordinates to spherical mercator coordinates
+        :return: spherical mercator coordinates
         """
         longitude, latitude = self.__map(longitude, latitude)
         return int(latitude / self.scale), int(longitude / self.scale)
