@@ -256,10 +256,11 @@ class NumentaPreprocessor(AbstractPreprocessor):
 
 
 class AltGeoPreprocessor(AbstractPreprocessor):
-    def __init__(self, g_prec: int = 6, s_prec: int = 1, s_max: float = 140):
+    def __init__(self, g_prec: int = 5, s_prec: int = 1, s_max: float = 140, diff=True):
         self.g_prec = g_prec
         self.s_prec = s_prec
         self.s_max = s_max
+        self.diff = diff
 
     def _process(self, filename: str, cache: dict) -> None:
         # language=rst
@@ -282,11 +283,12 @@ class AltGeoPreprocessor(AbstractPreprocessor):
         sdigits = len(str(int(self.s_max * sconst)))
 
         values = []
+        hist = None
         for speed, latitude, longitude in tqdm(zip(speeds, latitudes, longitudes), unit='Entry'):
 
-            latitude = str(int(np.floor((latitude + 90) * gconst)))
-            longitude = str(int(np.floor((longitude + 180) * gconst)))
-            speed = str(int(np.floor(speed * sconst)))
+            latitude = str(int(np.floor((latitude + 90) * gconst))).zfill(gdigits)
+            longitude = str(int(np.floor((longitude + 180) * gconst))).zfill(gdigits)
+            speed = str(int(np.floor(speed * sconst))).zfill(sdigits)
 
             lat = np.zeros((gdigits, 10))
             long = np.zeros((gdigits, 10))
@@ -297,8 +299,13 @@ class AltGeoPreprocessor(AbstractPreprocessor):
             self.__encode(speed, spd)
 
             v = np.concatenate((np.reshape(lat, -1), np.reshape(long, -1), np.reshape(spd, -1)))
-
-            values.append(v.tolist())
+            if hist is not None and self.diff:
+                values.append((np.abs(hist-v)).tolist())
+                hist = v
+            elif self.diff:
+                hist = v
+            else:
+                values.append(v)
 
         cache['data'] = torch.tensor(values)
 
